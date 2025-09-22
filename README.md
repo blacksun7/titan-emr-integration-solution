@@ -1,4 +1,4 @@
-# Titan Intake – EMR Integrations (v4, from scratch)
+# Titan Intake – EMR Integrations
 
 This version is built fresh with all enhancements discussed:
 
