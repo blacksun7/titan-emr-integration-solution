@@ -1,0 +1,5 @@
+MSH|^~\&|INTEGRATION|TITAN|EMR|MEDPLUM|202409201200||ADT^A04|MSG00001|P|2.5
+PID|||12345^^^MRN||Smith^John||20031231|M|||123 Main St^^Houston^TX^77001||5551234567
+IN1|1|bluecross|||...||||GROUP1||||||||||PPO|||||||||||||||||234ASD
+OBX|1|NM|HR||72|/min|||N|||202409201159
+OBX|2|ST|Notes||Patient feels well|||||202409201200

@@ -1,0 +1,95 @@
+{
+  "Patient": {
+    "identifier[0].system": {
+      "const": "${MRN_SYSTEM}"
+    },
+    "identifier[0].value": {
+      "hl7": "PID.3"
+    },
+    "name[0].family": {
+      "hl7": "PID.5.0"
+    },
+    "name[0].given[0]": {
+      "hl7": "PID.5.1"
+    },
+    "birthDate": {
+      "hl7": "PID.7",
+      "transform": "date"
+    },
+    "gender": {
+      "hl7": "PID.8",
+      "transform": "gender"
+    },
+    "address[0].line[0]": {
+      "hl7": "PID.11.0"
+    },
+    "address[0].city": {
+      "hl7": "PID.11.2"
+    },
+    "address[0].state": {
+      "hl7": "PID.11.3"
+    },
+    "address[0].postalCode": {
+      "hl7": "PID.11.4"
+    },
+    "telecom[0].system": {
+      "const": "phone"
+    },
+    "telecom[0].value": {
+      "hl7": "PID.13.0"
+    }
+  },
+  "Coverage": {
+    "status": {
+      "const": "active"
+    },
+    "payor[0].display": {
+      "hl7": "IN1.2"
+    },
+    "subscriberId": {
+      "hl7": "IN1.36"
+    },
+    "type.text": {
+      "hl7": "IN1.17"
+    },
+    "class[0].type.text": {
+      "const": "group"
+    },
+    "class[0].value": {
+      "hl7": "IN1.8"
+    }
+  },
+  "Observation": {
+    "_repeat": "OBX",
+    "status": {
+      "const": "final"
+    },
+    "code.text": {
+      "hl7": "OBX.3.1"
+    },
+    "code.coding[0].code": {
+      "hl7": "OBX.3.1"
+    },
+    "code.coding[0].system": {
+      "const": "urn:hl7:obx3"
+    },
+    "effectiveDateTime": {
+      "hl7": "OBX.14",
+      "transform": "dateTime"
+    },
+    "value[x]": {
+      "hl7": "OBX.5",
+      "transform": "valueByType",
+      "metaField": "OBX.2"
+    },
+    "valueQuantity.unit": {
+      "hl7": "OBX.6.1"
+    },
+    "valueQuantity.code": {
+      "hl7": "OBX.6.1"
+    },
+    "valueQuantity.system": {
+      "const": "http://unitsofmeasure.org"
+    }
+  }
+}

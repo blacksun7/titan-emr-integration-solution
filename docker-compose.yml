@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  emr-server:
+    build: ./emr-server
+    env_file:
+      - ./emr-server/.env
+    ports:
+      - "8081:8081"
+  integration-service:
+    build: ./integration-service
+    env_file:
+      - ./integration-service/.env
+    ports:
+      - "8082:8082"
+    depends_on:
+      - emr-server
