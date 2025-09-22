@@ -1,19 +1,19 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ADT^A04",
+  "title": "ADT^A08",
   "type": "object",
   "properties": {
     "MSH": {
-      "type": "array"
+      "type": "boolean"
     },
     "PID": {
-      "type": "array"
+      "type": "boolean"
     },
     "IN1": {
-      "type": "array"
+      "type": "boolean"
     },
     "OBX": {
-      "type": "array"
+      "type": "boolean"
     }
   },
   "required": [

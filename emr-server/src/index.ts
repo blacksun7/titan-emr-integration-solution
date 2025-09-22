@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import logger from './utils/logger.js';
 import { tokenRouter, requireAuth } from './security/auth.js';
 import { fhirProxyRouter } from './routes/fhirProxy.js';
-import { hl7InboundRouter } from './routes/hl7Inbound.js';
+import hl7InboundRouter from './routes/hl7Inbound.js';
 
 dotenv.config();
 const app = express();
