@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import * as simpleHl7 from 'simple-hl7';
 import axios from 'axios';
 import logger from '../utils/logger.js';
 

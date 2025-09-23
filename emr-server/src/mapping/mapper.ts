@@ -1,14 +1,17 @@
-import Ajv from 'ajv';
-import logger from '../utils/logger';
+import logger from '../utils/logger.js';
 
 import schemaA04 from '../schemas/ADT_A04.json';
 import schemaA08 from '../schemas/ADT_A08.json';
 
-const MRN_SYSTEM = process.env.MRN_SYSTEM || 'urn:mrn:titan-intake';
+// import Ajv from 'ajv';
+const Ajv = require('ajv');
 
-const ajv = new Ajv();
+const ajv = new Ajv({ allErrors: true, strict: false });
+
 const validateA04 = ajv.compile(schemaA04);
 const validateA08 = ajv.compile(schemaA08);
+
+const MRN_SYSTEM = process.env.MRN_SYSTEM || 'urn:mrn:titan-intake';
 
 /**
  * Helper: Extract HL7 field value by segment + index
