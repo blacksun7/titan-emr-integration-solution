@@ -2,41 +2,31 @@
   "version": "0.2.0",
   "configurations": [
     {
-      // EMR Server
+      // EMR Server - dev mode
       "type": "node",
       "request": "launch",
-      "name": "Debug EMR Server (ts-node-dev)",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": [
-        "--inspect-brk",
-        "--loader",
-        "ts-node/esm",
-        "src/index.ts"
-      ],
+      "name": "Debug EMR Server (dev)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
       "cwd": "${workspaceFolder}/emr-server",
       "envFile": "${workspaceFolder}/emr-server/.env",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"]
     },
     {
-      // Integration Service
+      // Integration Service - dev mode
       "type": "node",
       "request": "launch",
-      "name": "Debug Integration Service (ts-node-dev)",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": [
-        "--inspect-brk",
-        "--loader",
-        "ts-node/esm",
-        "src/index.ts"
-      ],
+      "name": "Debug Integration Service (dev)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
       "cwd": "${workspaceFolder}/integration-service",
       "envFile": "${workspaceFolder}/integration-service/.env",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"]
     },
     {
-      // Jest tests for EMR Server
+      // Jest tests for EMR
       "type": "node",
       "request": "launch",
       "name": "Debug Jest Tests (emr-server)",
@@ -62,7 +52,7 @@
       "envFile": "${workspaceFolder}/integration-service/.env"
     },
     {
-      // Attach to already running process
+      // Attach to a running process
       "type": "node",
       "request": "attach",
       "name": "Attach to Process",
@@ -72,10 +62,10 @@
   ],
   "compounds": [
     {
-      "name": "Debug Both Services (ts-node-dev)",
+      "name": "Debug Both Services (dev)",
       "configurations": [
-        "Debug EMR Server (ts-node-dev)",
-        "Debug Integration Service (ts-node-dev)"
+        "Debug EMR Server (dev)",
+        "Debug Integration Service (dev)"
       ],
       "stopAll": true
     }
