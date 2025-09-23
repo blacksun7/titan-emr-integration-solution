@@ -24,4 +24,4 @@ app.use((err: any, _req: any, res: any, _next: any) => {
 });
 
 const port = process.env.PORT || 8081;
-app.listen(port, () => logger.info(`EMR server v4 listening on :${port}`));
+app.listen(port, () => logger.info(`EMR server listening on :${port}`));

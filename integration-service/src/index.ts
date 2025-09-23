@@ -19,4 +19,4 @@ app.use((err: any, _req: any, res: any, _next: any) => {
 });
 
 const port = process.env.PORT || 8082;
-app.listen(port, () => logger.info(`Integration service v4 listening on :${port}`));
+app.listen(port, () => logger.info(`Integration service listening on :${port}`));

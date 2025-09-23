@@ -1,0 +1,83 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // EMR Server
+      "type": "node",
+      "request": "launch",
+      "name": "Debug EMR Server (ts-node-dev)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--inspect-brk",
+        "--loader",
+        "ts-node/esm",
+        "src/index.ts"
+      ],
+      "cwd": "${workspaceFolder}/emr-server",
+      "envFile": "${workspaceFolder}/emr-server/.env",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      // Integration Service
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Integration Service (ts-node-dev)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--inspect-brk",
+        "--loader",
+        "ts-node/esm",
+        "src/index.ts"
+      ],
+      "cwd": "${workspaceFolder}/integration-service",
+      "envFile": "${workspaceFolder}/integration-service/.env",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      // Jest tests for EMR Server
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Jest Tests (emr-server)",
+      "program": "${workspaceFolder}/emr-server/node_modules/jest/bin/jest.js",
+      "args": ["--runInBand", "--detectOpenHandles"],
+      "cwd": "${workspaceFolder}/emr-server",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "runtimeArgs": ["--loader", "ts-node/esm"],
+      "envFile": "${workspaceFolder}/emr-server/.env"
+    },
+    {
+      // Jest tests for Integration Service
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Jest Tests (integration-service)",
+      "program": "${workspaceFolder}/integration-service/node_modules/jest/bin/jest.js",
+      "args": ["--runInBand", "--detectOpenHandles"],
+      "cwd": "${workspaceFolder}/integration-service",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "runtimeArgs": ["--loader", "ts-node/esm"],
+      "envFile": "${workspaceFolder}/integration-service/.env"
+    },
+    {
+      // Attach to already running process
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Process",
+      "processId": "${command:PickProcess}",
+      "restart": true
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Both Services (ts-node-dev)",
+      "configurations": [
+        "Debug EMR Server (ts-node-dev)",
+        "Debug Integration Service (ts-node-dev)"
+      ],
+      "stopAll": true
+    }
+  ]
+}
