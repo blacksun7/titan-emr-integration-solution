@@ -13,7 +13,7 @@ grant_type=client_credentials
 ### 2. List Patients directly in Medplum
 # Replace {{medplum_token}} with the access_token returned above
 GET https://api.medplum.com/fhir/R4/Patient
-Authorization: Bearer {{medplum_token}}
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Ijk5MjI2MjNmLTVmMjctNDFiYi04NTQ1LTZkY2IwZmVkODk4MSIsInR5cCI6IkpXVCJ9.eyJjbGllbnRfaWQiOiJhNWYyNDg3OS0xNzJlLTQxYWQtOTJkYS1hZDFiMTExMWI2NDUiLCJsb2dpbl9pZCI6ImVkZTNlNTU1LTllNDEtNDI0Ny1iYTNjLWU1NTY1MThmYzIyNSIsInN1YiI6ImE1ZjI0ODc5LTE3MmUtNDFhZC05MmRhLWFkMWIxMTExYjY0NSIsInVzZXJuYW1lIjoiYTVmMjQ4NzktMTcyZS00MWFkLTkyZGEtYWQxYjExMTFiNjQ1Iiwic2NvcGUiOiJzeXN0ZW0vKi5yZWFkIHN5c3RlbS8qLndyaXRlIiwicHJvZmlsZSI6IkNsaWVudEFwcGxpY2F0aW9uL2E1ZjI0ODc5LTE3MmUtNDFhZC05MmRhLWFkMWIxMTExYjY0NSIsImlhdCI6MTc1ODY2NjQ4OSwiaXNzIjoiaHR0cHM6Ly9hcGkubWVkcGx1bS5jb20vIiwiYXVkIjoiYTVmMjQ4NzktMTcyZS00MWFkLTkyZGEtYWQxYjExMTFiNjQ1IiwiZXhwIjoxNzU4NjcwMDg5fQ.h61RNWZLIdnU9McYphCgHORsMKsiwo0Dah8hrR0kTB5C3rf4W8K2yz0e-r-zOsIOM4Lb0LSpb7mBj5dDDTij6CPy8qnhQmXxKd4SHVVOiFQbG3Fzt9jmlz5hUdzlDjHwGWd1aB1wC1GA9i6WUKdF1Pi24Pe5FTgY1FLD5ycxzbFu9P4aTY27RMIWmUCLUhBBdY7vG3tazTcyeYbDRoP9Zsv32vrPg3ZmRV8Eq-HDqDF5h6fQjyrKf1RVi-CAbku2WBP8aEzaVBR1cGnzwFNovmYIZmDP7CqI4g9pq9icDOihJTOyBnqITYFN5bhPC3vrlGHHZN3r8PB23miGim_DQw
 
 ### 3. Get EMR server token (local)
 POST http://localhost:8081/auth/token
@@ -24,7 +24,7 @@ grant_type=client_credentials&client_id=demo&client_secret=demo
 ### 4. Send sample HL7 to EMR server (upsert → Medplum)
 # Replace {{emr_token}} with access_token from step 3
 POST http://localhost:8081/hl7/inbound
-Authorization: Bearer {{emr_token}}
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJlbXItc2VydmVyIiwiYXVkIjoiZW1yLWNsaWVudHMiLCJzdWIiOiJkZW1vIiwiaWF0IjoxNzU4NjY2NjU2LCJleHAiOjE3NTg2NzAyNTYsInNjb3BlIjoiZW1yLnJlYWQgZW1yLndyaXRlIn0.WI5wwwGDuBqyJN4i5QmxEuwONChvVecobdOxH20iBEE
 Content-Type: text/plain
 
 MSH|^~\&|INTEGRATION|TITAN|EMR|MEDPLUM|202409201200||ADT^A04|MSG00001|P|2.5

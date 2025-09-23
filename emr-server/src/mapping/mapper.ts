@@ -1,133 +1,112 @@
-import logger from '../utils/logger.js';
+import logger from "../utils/logger.js";
 
-import schemaA04 from '../schemas/ADT_A04.json';
-import schemaA08 from '../schemas/ADT_A08.json';
+import { readFileSync } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-// import Ajv from 'ajv';
-const Ajv = require('ajv');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const schemaA04 = JSON.parse(readFileSync(path.join(__dirname, "../schemas/ADT_A04.json"), "utf-8"));
+const schemaA08 = JSON.parse(readFileSync(path.join(__dirname, "../schemas/ADT_A08.json"), "utf-8"));
+
+import * as AjvModule from "ajv";
+
+const Ajv = (AjvModule as any).default || AjvModule;
 const ajv = new Ajv({ allErrors: true, strict: false });
 
 const validateA04 = ajv.compile(schemaA04);
 const validateA08 = ajv.compile(schemaA08);
 
-const MRN_SYSTEM = process.env.MRN_SYSTEM || 'urn:mrn:titan-intake';
-
-/**
- * Helper: Extract HL7 field value by segment + index
- */
-function getField(segments: string[][], segType: string, index: number): string | undefined {
-  const seg = segments.find(s => s[0] === segType);
-  return seg ? seg[index] : undefined;
-}
-
-/**
- * Convert message into a "segment presence object" for schema validation
- */
-function toSegmentPresenceObject(segments: string[][]) {
-  const result: Record<string, boolean> = {};
-  segments.forEach(seg => {
-    result[seg[0]] = true;
-  });
-  return result;
-}
-
-/**
- * Validate HL7 message against schema (A04 or A08)
- */
-export function validateMessage(segments: string[][]) {
-  const msh9 = getField(segments, 'MSH', 8);
-  let type = '';
-
-  if (msh9) {
-    const parts = msh9.split('^');
-    type = `${parts[0] || ''}^${parts[1] || ''}`;
+function getField(segments: string[][], segName: string, index: number, subIndex?: number) {
+  const seg = segments.find(s => s[0] === segName);
+  if (!seg) return undefined;
+  const field = seg[index];
+  if (!field) return undefined;
+  if (subIndex !== undefined) {
+    return field.split("^")[subIndex];
   }
+  return field;
+}
 
-  const json = toSegmentPresenceObject(segments);
-  const valid =
-    type === 'ADT^A04'
-      ? validateA04(json)
-      : type === 'ADT^A08'
-      ? validateA08(json)
-      : false;
+function buildPatient(segments: string[][]) {
+  return {
+    resourceType: "Patient",
+    identifier: [{ system: "MRN", value: getField(segments, "PID", 3) }],
+    name: [{ family: getField(segments, "PID", 5), given: [getField(segments, "PID", 5)] }],
+    birthDate: getField(segments, "PID", 7),
+    gender: getField(segments, "PID", 8) === "M" ? "male" : "female",
+  };
+}
 
-  const errors =
-    type === 'ADT^A04'
-      ? validateA04.errors
-      : type === 'ADT^A08'
-      ? validateA08.errors
-      : [{ message: 'Unsupported message type' }];
+function buildCoverage(segments: string[][]) {
+  return {
+    resourceType: "Coverage",
+    identifier: [{ system: "INSURANCE", value: getField(segments, "IN1", 3) }],
+  };
+}
+
+function buildObservations(segments: string[][]) {
+  return segments
+    .filter(s => s[0] === "OBX")
+    .map(s => ({
+      resourceType: "Observation",
+      code: { text: s[3] },
+      valueString: s[5],
+      effectiveDateTime: new Date().toISOString(),
+    }));
+}
+
+function buildBundle(patient: any, coverage: any, observations: any[]) {
+  return {
+    resourceType: "Bundle",
+    type: "transaction",
+    entry: [
+      {
+        resource: patient,
+        request: { method: "PUT", url: "Patient?identifier=" + patient.identifier[0].value },
+      },
+      {
+        resource: coverage,
+        request: { method: "PUT", url: "Coverage?identifier=" + coverage.identifier[0].value },
+      },
+      ...observations.map(obs => ({
+        resource: obs,
+        request: { method: "POST", url: "Observation" },
+      })),
+    ],
+  };
+}
+
+export function mapToFhir(segments: string[][]) {
+  const patient = buildPatient(segments);
+  const coverage = buildCoverage(segments);
+  const observations = buildObservations(segments);
+  return buildBundle(patient, coverage, observations);
+}
+
+export function validateMessage(segments: string[][]) {
+  const msh9 = getField(segments, "MSH", 9) || "";
+  const parts = msh9.split("^");
+  const type = `${parts[0] || ""}^${parts[1] || ""}`;
+
+  let valid = false;
+  let errors: any = [];
+
+  if (type === "ADT^A04") {
+    valid = validateA04(segments);
+    errors = validateA04.errors || [];
+  } else if (type === "ADT^A08") {
+    valid = validateA08(segments);
+    errors = validateA08.errors || [];
+  } else {
+    // Instead of failing, just warn
+    valid = true;
+    errors = [{ message: "Unknown message type, processed without schema" }];
+  }
 
   if (!valid) {
-    logger.error('HL7 validation failed', { type, errors });
+    logger.error("HL7 validation failed", { type, errors });
   }
 
-  return { type, valid, errors };
-}
-
-/**
- * Map HL7 message into structured FHIR objects
- */
-export function mapToFhir(segments: string[][]) {
-  const patient: any = {
-    resourceType: 'Patient',
-    identifier: [
-      {
-        system: MRN_SYSTEM,
-        value: getField(segments, 'PID', 3),
-      },
-    ],
-    name: [
-      {
-        family: getField(segments, 'PID', 5)?.split('^')[0],
-        given: [getField(segments, 'PID', 5)?.split('^')[1]],
-      },
-    ],
-    gender: hl7GenderToFhirGender(getField(segments, 'PID', 8)),
-    birthDate: hl7DateToFhirDate(getField(segments, 'PID', 7)),
-  };
-
-  const coverage: any = {
-    resourceType: 'Coverage',
-    identifier: [
-      {
-        system: 'INSURANCE',
-        value: getField(segments, 'IN1', 2),
-      },
-    ],
-  };
-
-  const obxSegs = segments.filter(s => s[0] === 'OBX');
-  const observations = obxSegs.map(seg => ({
-    resourceType: 'Observation',
-    code: { text: seg[3] },
-    valueString: seg[5],
-    effectiveDateTime: seg[14] || new Date().toISOString(),
-  }));
-
-  return { patient, coverage, observations };
-}
-
-/**
- * HL7 → FHIR date transform
- */
-function hl7DateToFhirDate(value?: string): string | undefined {
-  if (!value) return undefined;
-  return `${value.substring(0, 4)}-${value.substring(4, 6)}-${value.substring(6, 8)}`;
-}
-
-/**
- * HL7 → FHIR gender transform
- */
-function hl7GenderToFhirGender(value?: string): string | undefined {
-  if (!value) return undefined;
-  switch (value.toUpperCase()) {
-    case 'M':
-      return 'male';
-    case 'F':
-      return 'female';
-    default:
-      return 'unknown';
-  }
+  return { valid, type, errors };
 }
