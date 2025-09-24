@@ -7,7 +7,7 @@ grant_type=client_credentials&client_id=demo&client_secret=demo
 ### 2. Send sample HL7 to EMR server (will upsert into Medplum if configured in .env)
 # Replace {{emr_token}} with access_token from step 1
 POST http://localhost:8081/hl7/inbound
-Authorization: Bearer {{emr_token}}
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJlbXItc2VydmVyIiwiYXVkIjoiZW1yLWNsaWVudHMiLCJzdWIiOiJkZW1vIiwiaWF0IjoxNzU4NzM2ODQ1LCJleHAiOjE3NTg3NDA0NDUsInNjb3BlIjoiZW1yLnJlYWQgZW1yLndyaXRlIn0.kmn-g2AgwUunr28NYkonJVj7v4udFoefs5QJuEkfExg
 Content-Type: text/plain
 
 MSH|^~\&|INTEGRATION|TITAN|EMR|MEDPLUM|202409201200||ADT^A04|MSG00001|P|2.5

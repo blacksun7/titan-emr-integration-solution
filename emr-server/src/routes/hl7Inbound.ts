@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
-import { mapToFhir, validateMessage } from "../mapping/mapper.js";
-import logger from "../utils/logger.js";
+import { mapToFhir, validateMessage, getField } from "../mapping/mapper.js";
+import logger, { auditLogger, errorLogger } from "../utils/logger.js";
 import { sendToMedplum } from "../utils/medplumClient.js";
 
 const hl7InboundRouter = Router();
@@ -10,6 +10,11 @@ hl7InboundRouter.post("/", async (req: Request, res: Response) => {
     // Support both JSON { hl7: "..." } and raw text/plain HL7 payloads
     const raw = typeof req.body === "string" ? req.body : req.body?.hl7;
     if (!raw || typeof raw !== "string") {
+      errorLogger.error(
+        JSON.stringify({
+          error: "Missing HL7 message",
+        })
+      );
       return res.status(400).json({
         resourceType: "OperationOutcome",
         issue: [
@@ -31,7 +36,12 @@ hl7InboundRouter.post("/", async (req: Request, res: Response) => {
     // Validate HL7
     const result = validateMessage(segments);
     if (!result.valid) {
-      logger.error("Invalid HL7 message", result);
+      errorLogger.error(
+        JSON.stringify({
+          error: "Validation failed",
+          issues: result.errors,
+        })
+      );
       return res.status(400).json({
         resourceType: "OperationOutcome",
         issue: result.errors.map((e: any) => ({
@@ -46,14 +56,33 @@ hl7InboundRouter.post("/", async (req: Request, res: Response) => {
     const bundle = mapToFhir(segments);
     logger.info("HL7 message mapped to FHIR", { bundle });
 
-    // Send to Medplum
+    // Send to Medplum if enabled
     if (process.env.UPSERT_TO_MEDPLUM === "true") {
       try {
         const medplumResponse = await sendToMedplum(bundle);
-        logger.info("Medplum response", medplumResponse);
+
+        // Audit log for success
+        const msgType = getField(segments, "MSH", 8) || "UNKNOWN";
+        const controlId = getField(segments, "MSH", 9) || "UNKNOWN";
+        auditLogger.info(
+          JSON.stringify({
+            controlId,
+            type: msgType,
+            fhir: bundle,
+          })
+        );
+
         return res.status(200).json(medplumResponse);
       } catch (err: any) {
-        logger.error("Failed to send to Medplum", { error: err.message });
+        const msgType = getField(segments, "MSH", 8) || "UNKNOWN";
+        const controlId = getField(segments, "MSH", 9) || "UNKNOWN";
+        errorLogger.error(
+          JSON.stringify({
+            error: `Failed to send to Medplum: ${err.message}`,
+            controlId,
+            type: msgType,
+          })
+        );
         return res.status(502).json({
           resourceType: "OperationOutcome",
           issue: [
@@ -66,8 +95,15 @@ hl7InboundRouter.post("/", async (req: Request, res: Response) => {
         });
       }
     }
+
+    // If not configured to send upstream, just return the bundle
+    return res.status(200).json(bundle);
   } catch (err: any) {
-    logger.error("Unhandled error", { error: err.message, stack: err.stack });
+    errorLogger.error(
+      JSON.stringify({
+        error: `Unhandled error: ${err.message}`,
+      })
+    );
     return res.status(500).json({
       resourceType: "OperationOutcome",
       issue: [

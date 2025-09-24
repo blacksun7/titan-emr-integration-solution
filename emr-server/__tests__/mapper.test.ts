@@ -19,13 +19,13 @@ describe("mapToFhir", () => {
     const coverage = bundle.entry[1].resource;
     const observations = bundle.entry.slice(2).map(e => e.resource);
 
-    expect(patient.identifier[0].system).toBe("urn:id:Hospital");
+    expect(patient.identifier[0].system).toBe("Hospital");
     expect(patient.identifier[0].value).toBe("12345");
     expect(patient.name[0].family).toBe("Doe");
     expect(patient.gender).toBe("male");
     expect(patient.birthDate).toBe("1980-01-01");
 
-    expect(coverage.identifier[0].system).toBe("urn:id:Insurance");
+    expect(coverage.identifier[0].system).toBe("Insurance");
     expect(coverage.identifier[0].value).toBe("INS123");
 
     expect(observations[0].code.coding[0].code).toBe("HR");

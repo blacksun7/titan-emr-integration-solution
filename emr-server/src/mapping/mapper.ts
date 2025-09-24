@@ -15,7 +15,7 @@ const ajv = new Ajv({ allErrors: true, strict: false });
 const validateA04 = ajv.compile(schemaA04);
 const validateA08 = ajv.compile(schemaA08);
 
-function getField(segments: string[][], segName: string, index: number, subIndex?: number): string | undefined {
+export function getField(segments: string[][], segName: string, index: number, subIndex?: number): string | undefined {
   const seg = segments.find(s => s[0] === segName);
   if (!seg) return undefined;
   const field = seg[index];

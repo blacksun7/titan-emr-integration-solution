@@ -57,6 +57,38 @@ LOG_LEVEL=debug npm run dev
 
 ---
 
+## 📝 Logging
+
+The EMR server produces three types of logs:
+
+- **Console logs** (`stdout`)  
+  - JSON-formatted logs via Winston  
+  - Configurable level with `LOG_LEVEL` (`debug`, `info`, `warn`, `error`)
+
+- **Audit log** (`logs/audit.log`)  
+  - Records **successful transfers** to Medplum  
+  - One entry per event:  
+
+    2025-09-24T19:30:10.123Z {"controlId":"MSG00001","type":"ADT^A04","fhir":{...}}
+
+  - Includes timestamp, HL7 control ID, message type, and the FHIR bundle sent upstream
+
+- **Error log** (`logs/errors.log`)  
+  - Records **failed transfers or validation errors**  
+  - One entry per event:  
+
+    2025-09-24T19:31:42.987Z {"error":"Failed to send to Medplum: 401 Unauthorized","controlId":"MSG00001","type":"ADT^A04"}
+
+
+### Configuration
+
+- Default directory: `logs/`  
+- Override with `LOG_DIR=/custom/path`  
+- Audit log = only successful transfers  
+- Error log = only validation or Medplum failures  
+
+---
+
 ## 📂 Supported HL7 Messages
 
 - **ADT^A04** – Patient Registration  
@@ -129,6 +161,33 @@ titan-emr-integration-solution/
 
 ---
 
+## 👤 Author
+
+- Dirk Blak – [linkedin.com/in/dirkblak](https://www.linkedin.com/in/dirkblak)  
+- Senior Software Engineer / FHIR Engineer  
+
+---
+
 ## 📄 License
 
-MIT  
+MIT License
+
+Copyright (c) 2025 Dirk Blak
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
