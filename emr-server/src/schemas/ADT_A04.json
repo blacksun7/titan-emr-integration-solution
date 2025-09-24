@@ -1,23 +1,31 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ADT^A04",
+  "title": "ADT_A04 HL7 Schema",
   "type": "object",
+  "required": ["MSH", "PID"],
   "properties": {
     "MSH": {
-      "type": "boolean"
+      "type": "array",
+      "description": "Message Header segment",
+      "items": { "type": "string" },
+      "minItems": 12
     },
     "PID": {
-      "type": "boolean"
+      "type": "array",
+      "description": "Patient Identification segment",
+      "items": { "type": "string" },
+      "minItems": 8
     },
     "IN1": {
-      "type": "boolean"
+      "type": "array",
+      "description": "Insurance segment",
+      "items": { "type": "string" }
     },
     "OBX": {
-      "type": "boolean"
+      "type": "array",
+      "description": "Observation segment",
+      "items": { "type": "string" }
     }
   },
-  "required": [
-    "MSH",
-    "PID"
-  ]
+  "additionalProperties": true
 }

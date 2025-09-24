@@ -1,13 +1,10 @@
-@MEDPLUM_CLIENT_ID = a5f24879-172e-41ad-92da-ad1b1111b645
-@MEDPLUM_CLIENT_SECRET = 8f1ddb9af2463645768462255cf9b8b7280143650688260d98df62ebe65a09df
-
 ### 1. Get local EMR token
 POST http://localhost:8081/auth/token
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=client_credentials&client_id=demo&client_secret=demo
 
-### 2. Send sample HL7 to EMR server (will upsert into Medplum)
+### 2. Send sample HL7 to EMR server (will upsert into Medplum if configured in .env)
 # Replace {{emr_token}} with access_token from step 1
 POST http://localhost:8081/hl7/inbound
 Authorization: Bearer {{emr_token}}

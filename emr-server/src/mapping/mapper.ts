@@ -1,5 +1,4 @@
 import logger from "../utils/logger.js";
-
 import { readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -10,14 +9,13 @@ const schemaA04 = JSON.parse(readFileSync(path.join(__dirname, "../schemas/ADT_A
 const schemaA08 = JSON.parse(readFileSync(path.join(__dirname, "../schemas/ADT_A08.json"), "utf-8"));
 
 import * as AjvModule from "ajv";
-
 const Ajv = (AjvModule as any).default || AjvModule;
 const ajv = new Ajv({ allErrors: true, strict: false });
 
 const validateA04 = ajv.compile(schemaA04);
 const validateA08 = ajv.compile(schemaA08);
 
-function getField(segments: string[][], segName: string, index: number, subIndex?: number) {
+function getField(segments: string[][], segName: string, index: number, subIndex?: number): string | undefined {
   const seg = segments.find(s => s[0] === segName);
   if (!seg) return undefined;
   const field = seg[index];
@@ -28,32 +26,84 @@ function getField(segments: string[][], segName: string, index: number, subIndex
   return field;
 }
 
+function normalizeDate(dateStr?: string): string | undefined {
+  if (!dateStr) return undefined;
+  const clean = dateStr.trim();
+  if (/^\d{8}$/.test(clean)) {
+    return `${clean.slice(0, 4)}-${clean.slice(4, 6)}-${clean.slice(6, 8)}`;
+  }
+  return clean;
+}
+
+function parseIdentifier(raw?: string, defaultSystem = "local") {
+  if (!raw) return undefined;
+  const parts = raw.split("^");
+  return {
+    system: parts[3] || defaultSystem,
+    value: parts[0],
+  };
+}
+
 function buildPatient(segments: string[][]) {
+  const pid5 = getField(segments, "PID", 5);
+  const [family, given] = pid5 ? pid5.split("^") : ["", ""];
+
+  const genderMap: Record<string, string> = { M: "male", F: "female", U: "unknown", O: "other" };
+  const genderCode: string = getField(segments, "PID", 8) ?? "";
+
+  const pid3 = getField(segments, "PID", 3);
+  const identifier = parseIdentifier(pid3, "MRN");
+
   return {
     resourceType: "Patient",
-    identifier: [{ system: "MRN", value: getField(segments, "PID", 3) }],
-    name: [{ family: getField(segments, "PID", 5), given: [getField(segments, "PID", 5)] }],
-    birthDate: getField(segments, "PID", 7),
-    gender: getField(segments, "PID", 8) === "M" ? "male" : "female",
+    identifier: identifier ? [identifier] : [],
+    name: [{ family, given: [given] }],
+    birthDate: normalizeDate(getField(segments, "PID", 7)),
+    gender: genderMap[genderCode] || "unknown",
   };
 }
 
 function buildCoverage(segments: string[][]) {
+  const in1_36 = getField(segments, "IN1", 36);
+  const identifier = parseIdentifier(in1_36, "http://example.org/insurance");
+
   return {
     resourceType: "Coverage",
-    identifier: [{ system: "INSURANCE", value: getField(segments, "IN1", 3) }],
+    status: "active",
+    payor: [{ display: getField(segments, "IN1", 4) || "Unknown Payor" }],
+    identifier: identifier ? [identifier] : [],
+    beneficiary: { reference: "urn:uuid:patient-1" },
   };
 }
 
 function buildObservations(segments: string[][]) {
   return segments
-    .filter(s => s[0] === "OBX")
-    .map(s => ({
-      resourceType: "Observation",
-      code: { text: s[3] },
-      valueString: s[5],
-      effectiveDateTime: new Date().toISOString(),
-    }));
+    .filter(s => s[0] === "OBX" && s[3])
+    .map(s => {
+      const obxSetId = s[1];
+      const obxCode = s[3]?.split("^")[0];
+      const obxDisplay = s[3]?.split("^")[1];
+      const obxTimestamp = s[14]; // OBX-14
+      const compositeIdParts = [obxCode, obxSetId, obxTimestamp].filter(Boolean);
+      const compositeId = compositeIdParts.join("-");
+
+      return {
+        resourceType: "Observation",
+        status: "final",
+        subject: { reference: "urn:uuid:patient-1" },
+        identifier: compositeId ? [{ system: "OBX", value: compositeId }] : [],
+        code: {
+          coding: [{
+            system: "http://loinc.org",
+            code: obxCode,
+            display: obxDisplay,
+          }]
+        },
+        valueString: s[2] === "TX" ? s[5] : undefined,
+        valueQuantity: s[2] === "NM" ? { value: parseFloat(s[5]) } : undefined,
+        effectiveDateTime: obxTimestamp ? normalizeDate(obxTimestamp) : new Date().toISOString(),
+      };
+    });
 }
 
 function buildBundle(patient: any, coverage: any, observations: any[]) {
@@ -62,16 +112,35 @@ function buildBundle(patient: any, coverage: any, observations: any[]) {
     type: "transaction",
     entry: [
       {
+        fullUrl: "urn:uuid:patient-1",
         resource: patient,
-        request: { method: "PUT", url: "Patient?identifier=" + patient.identifier[0].value },
+        request: {
+          method: "POST",
+          url: "Patient",
+          ifNoneExist: patient.identifier[0]
+            ? `identifier=${patient.identifier[0].system}|${patient.identifier[0].value}`
+            : undefined,
+        },
       },
       {
         resource: coverage,
-        request: { method: "PUT", url: "Coverage?identifier=" + coverage.identifier[0].value },
+        request: {
+          method: "POST",
+          url: "Coverage",
+          ifNoneExist: coverage.identifier[0]
+            ? `identifier=${coverage.identifier[0].system}|${coverage.identifier[0].value}`
+            : undefined,
+        },
       },
       ...observations.map(obs => ({
         resource: obs,
-        request: { method: "POST", url: "Observation" },
+        request: {
+          method: "POST",
+          url: "Observation",
+          ifNoneExist: obs.identifier?.[0]?.value
+            ? `identifier=${obs.identifier[0].system}|${obs.identifier[0].value}`
+            : undefined,
+        },
       })),
     ],
   };
@@ -84,28 +153,35 @@ export function mapToFhir(segments: string[][]) {
   return buildBundle(patient, coverage, observations);
 }
 
-export function validateMessage(segments: string[][]) {
-  const msh9 = getField(segments, "MSH", 9) || "";
-  const parts = msh9.split("^");
-  const type = `${parts[0] || ""}^${parts[1] || ""}`;
+function toHl7Object(segments: string[][]) {
+  const obj: any = {};
+  for (const seg of segments) {
+    obj[seg[0]] = seg;
+  }
+  return obj;
+}
 
+export function validateMessage(segments: string[][]) {
+  const msh9 = getField(segments, "MSH", 8) || "";
+  const type = msh9;
   let valid = false;
   let errors: any = [];
 
+  const hl7Object = toHl7Object(segments);
+
   if (type === "ADT^A04") {
-    valid = validateA04(segments);
+    valid = validateA04(hl7Object);
     errors = validateA04.errors || [];
   } else if (type === "ADT^A08") {
-    valid = validateA08(segments);
+    valid = validateA08(hl7Object);
     errors = validateA08.errors || [];
   } else {
-    // Instead of failing, just warn
-    valid = true;
-    errors = [{ message: "Unknown message type, processed without schema" }];
+    valid = false;
+    errors = [{ message: "Unknown message type" }];
   }
 
   if (!valid) {
-    logger.error("HL7 validation failed", { type, errors });
+    logger.error(`HL7 validation failed for message type ${type}`, { errors, segments });
   }
 
   return { valid, type, errors };

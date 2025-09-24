@@ -1,32 +1,34 @@
-import { mapToFhir } from '../src/mapping/mapper';
+import { mapToFhir } from "../src/mapping/mapper";
 
-function parseHL7(raw: string): string[][] {
-  return raw
-    .trim()
-    .split(/\r?\n/)
-    .map(line => line.split('|'));
-}
+describe("mapToFhir", () => {
+  it("maps ADT^A04 sample with OBX into structured FHIR", () => {
+    const msh = ["MSH", "|^~\\&", "SendingApp", "SendingFac", "ReceivingApp", "ReceivingFac", "202501011230", "", "", "ADT^A04"];
+    const pid = ["PID", "1", "", "12345^^^Hospital^MR", "", "Doe^John", "", "19800101", "M"];
 
-describe('mapToFhir', () => {
-  it('maps ADT^A04 sample with OBX into structured FHIR', () => {
-    const raw = `
-MSH|^~\\&|SendingApp|SendingFac|ReceivingApp|ReceivingFac|202509221200||ADT^A04|123456|P|2.5
-PID|1||12345^^^Hospital^MR||Doe^John||19800101|M
-IN1|1|A357|123456789|Best Insurance
-OBX|1|ST|1234-5^Test^LN||Positive||||||F
-    `.trim();
+    const in1 = new Array(37).fill("");
+    in1[0] = "IN1";
+    in1[3] = "Best Insurance"; // IN1-4 Payor
+    in1[36] = "INS123^^^Insurance"; // IN1-36 Policy number
 
-    const segments = parseHL7(raw);
-    const { patient, coverage, observations } = mapToFhir(segments);
+    const obx = ["OBX", "1", "NM", "HR^Heart Rate", "", "72", "bpm"];
 
-    expect(patient.identifier[0].value).toBe('12345^^^Hospital^MR');
-    expect(patient.name[0].family).toBe('Doe');
-    expect(patient.gender).toBe('male');
-    expect(patient.birthDate).toBe('1980-01-01');
+    const segments = [msh, pid, in1, obx];
 
-    expect(coverage.identifier[0].value).toBe('A357');
+    const bundle = mapToFhir(segments);
+    const patient = bundle.entry[0].resource;
+    const coverage = bundle.entry[1].resource;
+    const observations = bundle.entry.slice(2).map(e => e.resource);
 
-    expect(observations.length).toBeGreaterThan(0);
-    expect(observations[0].valueString).toBe('Positive');
+    expect(patient.identifier[0].system).toBe("urn:id:Hospital");
+    expect(patient.identifier[0].value).toBe("12345");
+    expect(patient.name[0].family).toBe("Doe");
+    expect(patient.gender).toBe("male");
+    expect(patient.birthDate).toBe("1980-01-01");
+
+    expect(coverage.identifier[0].system).toBe("urn:id:Insurance");
+    expect(coverage.identifier[0].value).toBe("INS123");
+
+    expect(observations[0].code.coding[0].code).toBe("HR");
+    expect(observations[0].valueQuantity.value).toBe(72);
   });
 });
